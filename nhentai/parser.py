@@ -138,13 +138,108 @@ def doujinshi_parser(id_, counter=0):
     html = BeautifulSoup(response, 'html.parser')
     doujinshi_info = html.find('div', attrs={'id': 'info'})
 
-    title = doujinshi_info.find('h1').text
-    pretty_name = doujinshi_info.find('h1').find('span', attrs={'class': 'pretty'}).text
-    subtitle = doujinshi_info.find('h2')
+    title = doujinshi_info.find('h1')
+    title_before = title.find('span', attrs={'class': 'before'}).text
+    title_pretty = title.find('span', attrs={'class': 'pretty'}).text
+    title_after = title.find('span', attrs={'class': 'after'}).text
 
-    doujinshi['name'] = title
-    doujinshi['pretty_name'] = pretty_name
-    doujinshi['subtitle'] = subtitle.text if subtitle else ''
+    if title_before == "":
+        while True:
+            if title_pretty.startswith("("):
+                try:
+                    split_text = title_pretty.split(")", 1)
+                    title_pretty = split_text[1].strip()
+                    title_before += split_text[0].strip()
+                    continue
+                except IndexError:
+                    pass
+            elif title_pretty.startswith("["):
+                try:
+                    split_text = title_pretty.split("]", 1)
+                    title_pretty = split_text[1].strip()
+                    title_before += split_text[0].strip()
+                    continue
+                except IndexError:
+                    pass
+            elif title_pretty.startswith(" "):
+                title_pretty = title_pretty.strip()
+                title_before += " "
+                continue
+            break
+
+    if title_after == "":
+        while True:
+            if title_pretty.endswith("]"):
+                try:
+                    split_text = title_pretty.rsplit("[", 1)
+                    title_pretty = split_text[0].strip()
+                    title_after = split_text[1].strip() + title_after
+                    continue
+                except IndexError:
+                    pass
+            elif title_pretty.endswith(" "):
+                title_pretty = title_pretty.strip()
+                title_after = " " + title_after
+                continue
+            break
+    
+    if " | " in title_pretty:
+        title_pretty = title_pretty.split(" | ")[0]
+
+    localized_title = doujinshi_info.find('h2')
+    if localized_title:
+        localized_title_before = localized_title.find('span', attrs={'class': 'before'}).text
+        localized_title_pretty = localized_title.find('span', attrs={'class': 'pretty'}).text
+        localized_title_after = localized_title.find('span', attrs={'class': 'after'}).text
+
+        if localized_title_before == "":
+            while True:
+                if localized_title_pretty.startswith("("):
+                    try:
+                        split_text = localized_title_pretty.split(")", 1)
+                        localized_title_pretty = split_text[1].strip()
+                        localized_title_before += split_text[0].strip()
+                        continue
+                    except IndexError:
+                        pass
+                elif localized_title_pretty.startswith("["):
+                    try:
+                        split_text = localized_title_pretty.split("]", 1)
+                        localized_title_pretty = split_text[1].strip()
+                        localized_title_before += split_text[0].strip()
+                        continue
+                    except IndexError:
+                        pass
+                elif localized_title_pretty.startswith(" "):
+                    localized_title_pretty = localized_title_pretty.strip()
+                    localized_title_before += " "
+                    continue
+                break
+
+        if localized_title_after == "":
+            while True:
+                if localized_title_pretty.endswith("]"):
+                    try:
+                        split_text = localized_title_pretty.rsplit("[", 1)
+                        localized_title_pretty = split_text[0].strip()
+                        localized_title_after = split_text[1].strip() + localized_title_after
+                        continue
+                    except IndexError:
+                        pass
+                elif localized_title_pretty.endswith(" "):
+                    localized_title_pretty = localized_title_pretty.strip()
+                    localized_title_after = " " + localized_title_after
+                    continue
+                break
+
+    doujinshi['name'] = title_before + title_pretty + title_after
+    doujinshi['pretty_name'] = title_pretty
+    if localized_title:
+        doujinshi['localized_name'] = localized_title_before + localized_title_pretty + localized_title_after
+        doujinshi["pretty_localized_name"] = localized_title_pretty
+    else:
+        doujinshi["localized_name"] = ''
+        doujinshi["pretty_localized_name"] = ''
 
     doujinshi_cover = html.find('div', attrs={'id': 'cover'})
     img_id = re.search('/galleries/([0-9]+)/cover.(jpg|png|gif)$',

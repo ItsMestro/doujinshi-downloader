@@ -36,39 +36,90 @@ def serialize_comic_xml(doujinshi, output_dir):
         f.write('<?xml version="1.0" encoding="utf-8"?>\n')
         f.write('<ComicInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" '
                 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n')
+        
+        # https://anansi-project.github.io/docs/comicinfo/schemas/v2.1
+        xml_write_simple_tag(f, 'Title', doujinshi.pretty_name)
+        series = doujinshi.parseseries(doujinshi.pretty_name)
+        xml_write_simple_tag(f, 'Series', series if series is not None else doujinshi.pretty_name)
 
-        xml_write_simple_tag(f, 'Manga', 'Yes')
+        # Number
+        # Count
+        # Volume
+        # AlternateSeries
+        # AlternateNumber
+        # AlternateCount
 
-        xml_write_simple_tag(f, 'Title', doujinshi.name)
-        xml_write_simple_tag(f, 'Summary', doujinshi.info.subtitle)
-        xml_write_simple_tag(f, 'PageCount', doujinshi.pages)
-        xml_write_simple_tag(f, 'URL', doujinshi.url)
-        xml_write_simple_tag(f, 'NhentaiId', doujinshi.id)
-        xml_write_simple_tag(f, 'Genre', doujinshi.info.categories)
+        if doujinshi.pretty_localized_name:
+            localized_name = doujinshi.parseseries(doujinshi.pretty_localized_name)
+            xml_write_simple_tag(f, 'Summary', localized_name if localized_name is not None else doujinshi.pretty_localized_name)
 
-        xml_write_simple_tag(f, 'BlackAndWhite', 'No' if doujinshi.info.tags and
-                             'full color' in doujinshi.info.tags else 'Yes')
-
+        # Notes
+            
         if doujinshi.info.date:
             dt = parse_date(doujinshi.info.date)
             xml_write_simple_tag(f, 'Year', dt.year)
             xml_write_simple_tag(f, 'Month', dt.month)
             xml_write_simple_tag(f, 'Day', dt.day)
-        if doujinshi.info.parodies:
-            xml_write_simple_tag(f, 'Series', doujinshi.info.parodies)
-        if doujinshi.info.characters:
-            xml_write_simple_tag(f, 'Characters', doujinshi.info.characters)
-        if doujinshi.info.tags:
-            xml_write_simple_tag(f, 'Tags', doujinshi.info.tags)
-        if doujinshi.info.artists:
-            xml_write_simple_tag(f, 'Writer', ' & '.join([i.strip() for i in
-                                                          doujinshi.info.artists.split(',')]))
+        if doujinshi.artists:
+            xml_write_simple_tag(f, 'Writer', ', '.join([i.strip().title() for i in
+                doujinshi.artists.split(',')]))
 
+        # Penciller
+        # Inker
+        # Colorist
+        # Letterer
+        # CoverArtist
+        # Editor 
+        # Translator
+        
+        if doujinshi.groups:
+            xml_write_simple_tag(f, 'Publisher', ', '.join([i.strip().title() for i in
+                doujinshi.groups.split(',')]))
+            
+        # Imprint
+            
+        xml_write_simple_tag(f, 'Genre', doujinshi.info.categories)
+        if doujinshi.tags:
+            xml_write_simple_tag(f, 'Tags', doujinshi.tags)
+        xml_write_simple_tag(f, 'Web', doujinshi.url)
+        xml_write_simple_tag(f, 'PageCount', doujinshi.pages)
         if doujinshi.info.languages:
             languages = [i.strip() for i in doujinshi.info.languages.split(',')]
             xml_write_simple_tag(f, 'Translated', 'Yes' if 'translated' in languages else 'No')
             [xml_write_simple_tag(f, 'LanguageISO', LANGUAGE_ISO[i]) for i in languages
              if (i != 'translated' and i in LANGUAGE_ISO)]
+        xml_write_simple_tag(f, 'Format', 'Digital')
+        xml_write_simple_tag(f, 'BlackAndWhite', 'No' if doujinshi.tags and
+            'full color' in doujinshi.tags else 'Yes')
+        xml_write_simple_tag(f, 'Manga', 'Yes')
+        if doujinshi.characters:
+            xml_write_simple_tag(f, 'Characters', ", ".join([i.strip().title() for i in doujinshi.characters.split(',')]))
+        if doujinshi.groups:
+            xml_write_simple_tag(f, 'Teams', ', '.join([i.strip().title() for i in
+                doujinshi.groups.split(',')]))
+            
+        # Locations
+        # ScanInformation
+        # StoryArc
+        # StoryArcNumber
+
+        if doujinshi.parodies:
+            xml_write_simple_tag(f, 'SeriesGroup', doujinshi.parodies.title())
+        xml_write_simple_tag(f, 'AgeRating', 'R18+')
+
+        # Pages
+        # CommunityRating
+        # MainCharacterOrTeam
+        # Review
+        # GTIN
+
+        # Kavita Specific
+        # I would use this if it wasn't broken currently
+        #
+        # LocalizedSeries
+
+        # Custom
+        xml_write_simple_tag(f, 'NhentaiId', doujinshi.id)
 
         f.write('</ComicInfo>')
 
